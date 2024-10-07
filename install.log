@@ -1,0 +1,9 @@
+[22:20:34 2024-10-06] FETCHING Version 2.38.4
+[22:20:34 2024-10-06] CREATING /home/domucchi/.spicetify
+[22:20:34 2024-10-06] DOWNLOADING https://github.com/spicetify/cli/releases/download/v2.38.4/spicetify-2.38.4-linux-amd64.tar.gz
+[22:20:35 2024-10-06] EXTRACTING /home/domucchi/.spicetify/spicetify.tar.gz
+[22:20:35 2024-10-06] SETTING EXECUTABLE PERMISSIONS TO /home/domucchi/.spicetify/spicetify
+[22:20:35 2024-10-06] REMOVING /home/domucchi/.spicetify/spicetify.tar.gz
+[22:20:35 2024-10-06] APPENDING /home/domucchi/.spicetify to PATH in /home/domucchi/.zshrc
+[22:20:35 2024-10-06] spicetify v2.38.4 was installed successfully to /home/domucchi/.spicetify
+[22:20:35 2024-10-06] Run 'spicetify --help' to get started
