@@ -18,54 +18,62 @@ Options:
 EOF
 }
 
-# --- ARGUMENTS ---
+# --- ARG PARSING ---
 if [[ "${1:-}" =~ ^(-h|--help)$ ]]; then
-  usage
-  exit 0
+  usage; exit 0
 fi
-
 if [[ $# -gt 1 ]]; then
-  echo "❌ Error: Too many arguments." >&2
-  usage
-  exit 1
+  echo "❌ Too many arguments." >&2
+  usage; exit 1
 fi
 
 DURATION=""
 if [[ $# -eq 1 ]]; then
-  if [[ "$1" =~ ^[0-9]+$ ]]; then
-    DURATION="$1"
-  else
-    echo "❌ Error: duration must be a positive integer." >&2
-    usage
-    exit 1
+  if [[ ! "$1" =~ ^[0-9]+$ ]]; then
+    echo "❌ Duration must be a positive integer." >&2
+    usage; exit 1
   fi
+  DURATION="$1"
 fi
 
-# --- CONFIGURATION ---
+# --- CONFIG ---
 RECORDINGS_DIR="$HOME/media/audio"
 PIDFILE="$RECORDINGS_DIR/.rec.pid"
 FILELIST="$RECORDINGS_DIR/.rec.last"
 FORMAT="wav"
 
-# --- DEPENDENCIES ---
-for cmd in ffmpeg pactl notify-send wl-copy file realpath awk; do
-  if ! command -v "$cmd" &>/dev/null; then
-    echo "❌ Error: '$cmd' not found in PATH." >&2
-    exit 1
-  fi
+# --- DEPS ---
+for cmd in ffmpeg pactl notify-send wl-copy realpath awk file; do
+  command -v "$cmd" &>/dev/null ||
+    { echo "❌ Missing $cmd in PATH"; exit 1; }
 done
-
 mkdir -p "$RECORDINGS_DIR"
 
-# --- HELPERS ---
+# --- PICK THE MONITOR SOURCE ---
+# You can override by exporting MONITOR_SOURCE=<your_source_name>
 get_monitor() {
+  if [[ -n "${MONITOR_SOURCE:-}" ]]; then
+    echo "$MONITOR_SOURCE"
+    return
+  fi
+  # 1) any RUNNING .monitor
+  local src
+  src=$(
+    pactl list sources short \
+      | awk '$2 ~ /\.monitor$/ && $NF=="RUNNING" { print $2; exit }'
+  )
+  if [[ -n "$src" ]]; then
+    echo "$src"
+    return
+  fi
+  # 2) fallback to first .monitor
   pactl list sources short \
-    | awk '/\.monitor/ { print $2; exit }'
+    | awk '$2 ~ /\.monitor$/ { print $2; exit }'
 }
 
 # --- START RECORDING ---
 start_recording() {
-  local src ts out pid ff_args=()
+  local src ts out ff_args=() pid
   src=$(get_monitor)
   if [[ -z "$src" ]]; then
     notify-send "🚫 Audio Record Error" \
@@ -73,31 +81,33 @@ start_recording() {
     exit 1
   fi
 
+  notify-send "🎧 Recording from" "$src"
+
   ts=$(date +%Y%m%d_%H%M%S)
   out="$RECORDINGS_DIR/system_audio_${ts}.${FORMAT}"
-
   [[ -n "$DURATION" ]] && ff_args+=( -t "$DURATION" )
 
   ffmpeg -hide_banner -loglevel error \
-    -f pulse -i "$src" "${ff_args[@]}" "$out" &
+    -f pulse \
+    -i "$src" "${ff_args[@]}" \
+    "$out" &
   pid=$!
 
-  echo "$pid"   >"$PIDFILE"
-  echo "$out"   >"$FILELIST"
+  echo "$pid" >"$PIDFILE"
+  echo "$out" >"$FILELIST"
 
   if [[ -n "$DURATION" ]]; then
     notify-send "⏺️ Recording Started" \
       "→ $(basename "$out") for ${DURATION}s"
   else
     notify-send "⏺️ Recording Started" \
-      "→ $(basename "$out") (toggle mode)"
+      "→ $(basename "$out") (toggle)"
   fi
 }
 
 # --- STOP RECORDING ---
 stop_recording() {
   local pid out uri
-
   if [[ ! -f "$PIDFILE" ]]; then
     notify-send "ℹ️ Audio Recorder" \
       "No recording in progress."
@@ -113,18 +123,17 @@ stop_recording() {
 
   if [[ ! -s "$out" ]]; then
     notify-send "🚫 Audio Recorder" \
-      "Recorded file is empty or missing!"
+      "Empty or missing file!"
     exit 1
   fi
 
   uri="file://$(realpath "$out")"
   printf '%s\n' "$uri" | wl-copy --type text/uri-list
-
   notify-send "⏹️ Recording Stopped" \
     "Saved $(basename "$out") and copied URI"
 }
 
-# --- MAIN LOGIC ---
+# --- MAIN ---
 if [[ -n "$DURATION" ]]; then
   start_recording
   sleep "$DURATION"
