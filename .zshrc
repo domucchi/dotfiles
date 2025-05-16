@@ -122,6 +122,7 @@ function y() {
 
 # Aliases
 alias yay=paru
+alias wallpaper=~/bin/wallpaper-selector.sh
 
 # NVM
 export NVM_DIR="$HOME/.nvm"

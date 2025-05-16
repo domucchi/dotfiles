@@ -1,0 +1,67 @@
+{
+	"layer": "top",
+	"modules-left": ["custom/launcher","cpu","memory","custom/media", "custom/vpn", "tray"],
+	"modules-center": ["hyprland/workspaces"],
+	"modules-right": ["custom/updates","custom/wallpaper", "pulseaudio","clock", "custom/power"],
+	
+	"pulseaudio": {
+		"tooltip": false,
+		"scroll-step": 5,
+		"format": "{icon} {volume}%",
+		"format-muted": " {volume}%",
+		"on-click":"pactl set-sink-mute @DEFAULT_SINK@ toggle",
+		"format-icons": {
+			"default": ["", "", ""]
+		}
+	},
+
+    "river/tags": {
+		"num-tags": 6
+    },
+	"tray":{
+		"icon-size":18,
+		"spacing": 10
+	},
+    "clock": {
+        "format": " {:%H:%M   %d/%m/%Y}"
+    },
+    "cpu": {
+        "interval": 15,
+        "format": " {}%",
+        "max-length": 10
+    },
+    "memory": {
+        "interval": 30,
+        "format": " {}%",
+        "max-length": 10
+    },
+    "custom/launcher":{
+        "format": " ",
+        "on-click": "rofi -show combi -combi-modes 'window,drun' -modes combi",
+        "on-click-right": "killall rofi"
+    },
+    "custom/power":{
+        "format": "⏻ ",
+        "on-click": "shutdown now"
+    },
+    "hyprland/workspaces": {
+        "format": "{icon} {name}",
+        "format-icons": {
+            "active": "",
+            "default": "",
+            "persistent": ""
+        },
+        "on-scroll-up": "hyprctl dispatch workspace r-1",
+        "on-scroll-down": "hyprctl dispatch workspace r+1",
+        "all-outputs": false,
+        "persistent_workspaces": {
+            "*": 5
+        }
+    },
+    "custom/vpn": {
+        "return-type": "json",
+        "exec": "$HOME/bin/vpn_status.sh",
+        "format": "{text}",
+        "interval": 5
+    }
+}
